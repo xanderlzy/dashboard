@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Projects</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Projects">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#111111">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23111'/%3E%3Cg fill='%23fff'%3E%3Crect x='32' y='40' width='30' height='100' rx='5'/%3E%3Crect x='75' y='40' width='30' height='70' rx='5'/%3E%3Crect x='118' y='40' width='30' height='45' rx='5'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+:root{--bg:#fafafa;--col:#f0f0f0;--card:#fff;--line:#e2e2e2;--text:#111;--mute:#8a8a8a;--accent:#111;--on:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0c;--col:#161616;--card:#1e1e1e;--line:#2c2c2c;--text:#f2f2f2;--mute:#777;--accent:#f2f2f2;--on:#111}}
+:root[data-theme="dark"]{--bg:#0c0c0c;--col:#161616;--card:#1e1e1e;--line:#2c2c2c;--text:#f2f2f2;--mute:#777;--accent:#f2f2f2;--on:#111}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+header{padding:18px 20px 12px;display:flex;justify-content:space-between;align-items:baseline}
+h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0}
+header span{color:var(--mute);font-size:13px}
+#board{flex:1;display:flex;gap:12px;padding:4px 20px 20px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+#board::-webkit-scrollbar{display:none}
+.col{flex:0 0 84%;max-width:380px;scroll-snap-align:center;background:var(--col);border-radius:14px;display:flex;flex-direction:column;min-height:0}
+@media(min-width:760px){#board{scroll-snap-type:none}.col{flex:1 1 0;max-width:none}}
+.ch{display:flex;justify-content:space-between;align-items:center;padding:14px 14px 8px;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em}
+.ch small{color:var(--mute);font-weight:500}
+.list{flex:1;overflow-y:auto;padding:4px 10px;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer}
+.card:active{transform:scale(.99)}
+.card.c{border-left:4px solid var(--pc)}
+.sw{display:flex;gap:10px;margin:2px 0 14px;align-items:center}
+.sw button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;background:var(--pc);cursor:pointer;padding:0}
+.sw button.on{outline:2px solid var(--text);outline-offset:2px}
+.sw button.none{background:var(--col);border:1.5px solid var(--mute)}
+.card b{font-weight:600;display:block}
+.card ul{list-style:none;margin:8px 0 0;padding:0;color:var(--mute);font-size:13px}
+.card li{padding:1px 0}.card li.d{text-decoration:line-through;opacity:.6}
+.card li:before{content:"–  "}
+.prog{height:2px;background:var(--line);border-radius:2px;margin-top:10px}
+.prog i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.add{margin:6px 10px 10px;padding:10px;border:1px dashed var(--line);border-radius:10px;background:none;color:var(--mute);font:inherit;cursor:pointer}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:5}
+#sheet.on{display:flex}
+.pane{background:var(--bg);width:100%;max-width:520px;max-height:88%;overflow-y:auto;border-radius:18px 18px 0 0;padding:18px 20px calc(20px + env(safe-area-inset-bottom,0px))}
+@media(min-width:760px){#sheet{align-items:center}.pane{border-radius:18px}}
+input,button{font:inherit;color:var(--text)}
+.t{width:100%;border:0;background:none;font-size:20px;font-weight:600;padding:4px 0;outline:none}
+.seg{display:flex;background:var(--col);border-radius:10px;padding:3px;margin:12px 0}
+.seg button{flex:1;border:0;background:none;padding:8px 4px;border-radius:8px;cursor:pointer;font-size:13px}
+.seg button.on{background:var(--accent);color:var(--on)}
+.n{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.n input[type=checkbox]{appearance:none;-webkit-appearance:none;width:20px;height:20px;border:1.5px solid var(--mute);border-radius:50%;flex:none;margin:0}
+.n input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+.n input[type=text]{flex:1;border:0;background:none;outline:none;min-width:0}
+.n.d input[type=text]{text-decoration:line-through;color:var(--mute)}
+.x{border:0;background:none;color:var(--mute);font-size:18px;cursor:pointer;padding:0 4px}
+.newn{width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:12px 0;outline:none}
+.foot{display:flex;justify-content:space-between;margin-top:18px}
+.foot button{border:0;background:none;color:var(--mute);cursor:pointer;padding:6px 0}
+.foot .ok{color:var(--text);font-weight:600}
+</style>
+</head>
+<body>
+<header><h1>Projects</h1><span id="count"></span></header>
+<div id="board"></div>
+<div id="sheet"><div class="pane" id="pane"></div></div>
+<script>
+var COLS=[["todo","To do"],["doing","In progress"],["done","Done"]];
+var KEY="kanban.v1",S=[],cur=null;
+try{S=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){S=[]}
+var PAL=["#e5484d","#f5a524","#46a758","#3e8fe0","#8e6fe0","#e05fa0"];
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function render(){
+  var h="";
+  COLS.forEach(function(c){
+    var items=S.filter(function(p){return p.s===c[0]});
+    h+='<section class="col"><div class="ch">'+c[1]+'<small>'+items.length+'</small></div><div class="list">';
+    items.forEach(function(p){
+      var done=p.n.filter(function(n){return n.d}).length,pct=p.n.length?done/p.n.length*100:0;
+      h+='<div class="card'+(p.c?' c':'')+'" '+(p.c?'style="--pc:'+p.c+'" ':'')+'data-id="'+p.id+'"><b>'+esc(p.t||"Untitled")+'</b>';
+      if(p.n.length){h+='<ul>'+p.n.slice(0,3).map(function(n){return'<li class="'+(n.d?"d":"")+'">'+esc(n.x)+'</li>'}).join("")+(p.n.length>3?'<li>+'+(p.n.length-3)+' more</li>':'')+'</ul><div class="prog"><i style="width:'+pct+'%"></i></div>'}
+      h+='</div>';
+    });
+    h+='</div><button class="add" data-add="'+c[0]+'">+ Add project</button></section>';
+  });
+  document.getElementById("board").innerHTML=h;
+  document.getElementById("count").textContent=S.length+(S.length==1?" project":" projects");
+}
+function sheet(){
+  var p=S.find(function(x){return x.id===cur});
+  if(!p){document.getElementById("sheet").classList.remove("on");return}
+  var h='<input class="t" id="title" placeholder="Project name" value="'+esc(p.t)+'">';
+  h+='<div class="sw"><button class="none'+(p.c?'':' on')+'" data-col="" title="No colour"></button>'+PAL.map(function(c){return'<button data-col="'+c+'" style="--pc:'+c+'" class="'+(p.c===c?'on':'')+'"></button>'}).join("")+'</div>';
+  h+='<div class="seg">'+COLS.map(function(c){return'<button data-s="'+c[0]+'" class="'+(p.s===c[0]?"on":"")+'">'+c[1]+'</button>'}).join("")+'</div>';
+  p.n.forEach(function(n,i){
+    h+='<div class="n'+(n.d?" d":"")+'"><input type="checkbox" data-c="'+i+'"'+(n.d?" checked":"")+'><input type="text" data-e="'+i+'" value="'+esc(n.x)+'"><button class="x" data-r="'+i+'">×</button></div>';
+  });
+  h+='<input class="newn" id="newn" placeholder="Add a pointer…  (press return)">';
+  h+='<div class="foot"><button data-del="1">Delete</button><button class="ok" data-close="1">Done</button></div>';
+  document.getElementById("pane").innerHTML=h;
+  document.getElementById("sheet").classList.add("on");
+}
+function open(id){cur=id;sheet()}
+function close(){cur=null;document.getElementById("sheet").classList.remove("on");S=S.filter(function(p){return p.t.trim()||p.n.length});save();render()}
+document.addEventListener("click",function(e){
+  var t=e.target,p=S.find(function(x){return x.id===cur});
+  if(t.dataset.add){var np={id:uid(),t:"",s:t.dataset.add,n:[]};S.push(np);save();render();open(np.id);setTimeout(function(){var i=document.getElementById("title");i&&i.focus()},50);return}
+  var card=t.closest&&t.closest(".card");if(card){open(card.dataset.id);return}
+  if(t.id==="sheet"||t.dataset.close){close();return}
+  if(!p)return;
+  if(t.dataset.col!==undefined){p.c=t.dataset.col;save();sheet();render()}
+  else if(t.dataset.s){p.s=t.dataset.s;save();sheet();render()}
+  else if(t.dataset.r!==undefined){p.n.splice(+t.dataset.r,1);save();sheet();render()}
+  else if(t.dataset.c!==undefined){p.n[+t.dataset.c].d=t.checked;save();sheet();render()}
+  else if(t.dataset.del){if(confirm("Delete this project?")){S=S.filter(function(x){return x!==p});save();close()}}
+});
+document.addEventListener("input",function(e){
+  var t=e.target,p=S.find(function(x){return x.id===cur});if(!p)return;
+  if(t.id==="title"){p.t=t.value;save()}
+  else if(t.dataset.e!==undefined){p.n[+t.dataset.e].x=t.value;save()}
+});
+document.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&e.target.id==="newn"&&e.target.value.trim()){
+    var p=S.find(function(x){return x.id===cur});p.n.push({x:e.target.value.trim(),d:false});save();sheet();render();document.getElementById("newn").focus();
+  }
+});
+render();
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+</script>
+</body>
+</html>

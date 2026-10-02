@@ -20,7 +20,7 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden}
 [hidden]{display:none!important}
-#home,#kanban{flex:1;display:flex;flex-direction:column;min-height:0}
+#home,#kanban,#habits{flex:1;display:flex;flex-direction:column;min-height:0}
 #home{padding:0 20px;overflow-y:auto}
 .top{display:flex;justify-content:flex-end;padding-top:14px}
 #gear{border:0;background:none;color:var(--mute);padding:6px;margin-right:-6px;cursor:pointer;display:flex}
@@ -35,8 +35,29 @@ body{background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMac
 .tool{display:flex;justify-content:space-between;align-items:center;width:100%;padding:20px 18px;background:var(--card);border:1px solid var(--line);border-radius:14px;font-size:17px;font-weight:600;text-align:left;cursor:pointer}
 .tool:active{transform:scale(.99)}
 .tool i{font-style:normal;color:var(--mute);font-weight:400;font-size:20px}
+#hlist{flex:1;overflow-y:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:12px}
+#hlist .add{margin:0}
+.hb{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.hh{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.hn{flex:1;min-width:0;cursor:pointer}
+.hn b{display:block;font-weight:600;font-size:16px}
+.hs{display:flex;gap:12px;margin-top:3px;font-size:12px;color:var(--mute)}
+.hs .u{color:var(--text);font-weight:600}
+.ck{flex:none;width:38px;height:38px;border-radius:50%;border:1.5px solid var(--mute);background:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.ck svg{width:20px;height:20px;fill:none;stroke:var(--on);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.ck.on{background:var(--pc,var(--accent));border-color:var(--pc,var(--accent))}
+.hb.c{border-left:4px solid var(--pc)}
+.ck.on svg{opacity:1}
+.hm{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,auto);gap:3px;margin-top:14px}
+.hm i{display:block;aspect-ratio:1;border-radius:2.5px;background:var(--line)}
+.hm i.on{background:var(--pc,var(--accent))}
+.hm .dl{font-size:9px;line-height:1;color:var(--mute);align-self:center;margin-right:3px}
+.hm i.f{background:none}
+.hm i.t{outline:1.5px solid var(--mute);outline-offset:1px}
+@media(min-width:760px){#hlist{width:100%;max-width:720px;margin:0 auto}}
+.empty{color:var(--mute);text-align:center;padding:40px 0 20px;font-size:14px}
 .hl{display:flex;align-items:baseline;gap:10px}
-#back{border:0;background:none;color:var(--mute);font-size:26px;line-height:1;padding:0 6px 0 0;cursor:pointer}
+#back,#hback{border:0;background:none;color:var(--mute);font-size:26px;line-height:1;padding:0 6px 0 0;cursor:pointer}
 header{padding:18px 20px 12px;display:flex;justify-content:space-between;align-items:baseline}
 h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0}
 header span{color:var(--mute);font-size:13px}
@@ -68,10 +89,10 @@ header span{color:var(--mute);font-size:13px}
 .prog{height:2px;background:var(--line);border-radius:2px;margin-top:10px}
 .prog i{display:block;height:100%;background:var(--accent);border-radius:2px}
 .add{margin:6px 10px 10px;padding:10px;border:1px dashed var(--line);border-radius:10px;background:none;color:var(--mute);font:inherit;cursor:pointer}
-#sheet,#set{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:5}
-#sheet.on,#set.on{display:flex}
+#sheet,#set,#hs{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:5}
+#sheet.on,#set.on,#hs.on{display:flex}
 .pane{background:var(--bg);width:100%;max-width:520px;max-height:88%;overflow-y:auto;border-radius:18px 18px 0 0;padding:18px 20px calc(20px + env(safe-area-inset-bottom,0px))}
-@media(min-width:760px){#sheet,#set{align-items:center}.pane{border-radius:18px}}
+@media(min-width:760px){#sheet,#set,#hs{align-items:center}.pane{border-radius:18px}}
 input,button{font:inherit;color:var(--text)}
 .t{width:100%;border:0;background:none;font-size:20px;font-weight:600;padding:4px 0;outline:none}
 .seg{display:flex;background:var(--col);border-radius:10px;padding:3px;margin:12px 0}
@@ -99,7 +120,12 @@ input,button{font:inherit;color:var(--text)}
 <header><div class="hl"><button id="back" aria-label="Home">&#8249;</button><h1>Kanban</h1></div><span id="count"></span></header>
 <div id="board"></div>
 </main>
-<div id="set"><div class="pane"><h3 style="margin:0;font-size:20px">Settings</h3><label class="lbl" for="nameIn">Your name</label><input class="t nameIn" id="nameIn" placeholder="Name" maxlength="30" autocomplete="off"><div class="foot"><span></span><button class="ok" data-sclose="1">Done</button></div></div></div>
+<div id="set"><div class="pane"><h3 style="margin:0;font-size:20px">Settings</h3><label class="lbl" for="nameIn">Your name</label><input class="t nameIn" id="nameIn" placeholder="Name" maxlength="30" autocomplete="off"><label class="lbl">Week starts on</label><div class="seg"><button data-ws="0">Sunday</button><button data-ws="1">Monday</button></div><div class="foot"><span></span><button class="ok" data-sclose="1">Done</button></div></div></div>
+<main id="habits" hidden>
+<header><div class="hl"><button id="hback" aria-label="Home">&#8249;</button><h1>Habits</h1></div><span id="hcount"></span></header>
+<div id="hlist"></div>
+</main>
+<div id="hs"><div class="pane" id="hpane"></div></div>
 <div id="sheet"><div class="pane" id="pane"></div></div>
 <script>
 var COLS=[["todo","To do"],["doing","In progress"],["done","Done"]];
@@ -184,7 +210,7 @@ document.addEventListener("keydown",function(e){
 render();
 var NK="dash.name",NAME="";
 try{var sv=localStorage.getItem(NK);if(sv!==null)NAME=sv}catch(e){}
-var TOOLS=[{id:"kanban",name:"Kanban"}];
+var TOOLS=[{id:"kanban",name:"Kanban"},{id:"habits",name:"Habits"}];
 function home(){
   var d=new Date(),h=d.getHours(),g=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
   document.getElementById("hello").innerHTML=NAME.trim()?g+',<br><span>'+esc(NAME.trim())+'</span>':g;
@@ -195,23 +221,86 @@ function route(){
   var id=location.hash.slice(1),on=TOOLS.some(function(t){return t.id===id})?id:"";
   document.getElementById("home").hidden=!!on;
   document.getElementById("kanban").hidden=on!=="kanban";
+  document.getElementById("habits").hidden=on!=="habits";
   if(!on)home();
+  if(on==="habits")hrender();
 }
 window.addEventListener("hashchange",route);
-document.addEventListener("visibilitychange",function(){if(!document.hidden&&!location.hash.slice(1))home();if(!document.hidden)render()});
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&!location.hash.slice(1))home();if(!document.hidden){render();hrender()}});
 document.addEventListener("click",function(e){
   var g=e.target.closest&&e.target.closest("[data-go]");
   if(g){location.hash=g.dataset.go;return}
-  if(e.target.id==="back")location.hash="";
+  if(e.target.id==="back"||e.target.id==="hback")location.hash="";
 });
 var SET=document.getElementById("set"),NI=document.getElementById("nameIn");
 document.addEventListener("click",function(e){
   var t=e.target;
-  if(t.closest&&t.closest("#gear")){NI.value=NAME;SET.classList.add("on");return}
+  if(t.closest&&t.closest("#gear")){NI.value=NAME;wsSeg();SET.classList.add("on");return}
+  if(t.dataset.ws!==undefined){WS=+t.dataset.ws;try{localStorage.setItem(WK,WS)}catch(e){}wsSeg();hrender();return}
   if(t===SET||t.dataset.sclose){SET.classList.remove("on")}
 });
 NI.addEventListener("input",function(){NAME=NI.value;try{localStorage.setItem(NK,NAME)}catch(e){}home()});
 NI.addEventListener("keydown",function(e){if(e.key==="Enter")SET.classList.remove("on")});
+
+// Week start (0 = Sunday, 1 = Monday): use dowIndex() and dayLabels() in any calendar
+var WK="dash.ws",WS=0;
+try{var wv=localStorage.getItem(WK);if(wv!==null)WS=+wv===1?1:0}catch(e){}
+function dowIndex(d){return(d.getDay()-WS+7)%7}
+function dayLabels(){var a=["S","M","T","W","T","F","S"];return a.slice(WS).concat(a.slice(0,WS))}
+function wsSeg(){[].forEach.call(document.querySelectorAll("[data-ws]"),function(b){b.classList.toggle("on",+b.dataset.ws===WS)})}
+var HKEY="habits.v1",HB=[],hcur=null,HN=12,HS=document.getElementById("hs");
+try{HB=JSON.parse(localStorage.getItem(HKEY)||"[]")}catch(e){HB=[]}
+function hsave(){try{localStorage.setItem(HKEY,JSON.stringify(HB))}catch(e){}}
+function dkey(d){var m=d.getMonth()+1,a=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(a<10?"0":"")+a}
+function streaks(b){
+  var t=new Date(),c=new Date(t.getFullYear(),t.getMonth(),t.getDate()),cur=0;
+  if(!b.d[dkey(c)])c.setDate(c.getDate()-1);
+  while(b.d[dkey(c)]){cur++;c.setDate(c.getDate()-1)}
+  var ks=Object.keys(b.d).sort(),run=0,best=0,prev=null;
+  ks.forEach(function(k){var dt=dueDate(k);run=prev&&Math.round((dt-prev)/864e5)===1?run+1:1;if(run>best)best=run;prev=dt});
+  return{cur:cur,best:best,total:ks.length}
+}
+function hweeks(){return window.matchMedia("(min-width:760px)").matches?24:12}
+function hrender(){
+  HN=hweeks();
+  var t=new Date(),td=new Date(t.getFullYear(),t.getMonth(),t.getDate()),tk=dkey(td);
+  var y=td.getFullYear(),m=td.getMonth(),o=td.getDate()-dowIndex(td)-(HN-1)*7,h="";
+  HB.forEach(function(b){
+    var s=streaks(b),cells=dayLabels().map(function(l){return'<span class="dl">'+l+'</span>'}).join("");
+    for(var i=0;i<HN*7;i++){
+      var d=new Date(y,m,o+i),k=dkey(d);
+      cells+=d>td?'<i class="f"></i>':'<i class="'+(b.d[k]?"on":"")+(k===tk?" t":"")+'" data-hk="'+b.id+'" data-d="'+k+'"></i>';
+    }
+    h+='<section class="hb'+(b.c?" c":"")+'"'+(b.c?' style="--pc:'+b.c+'"':'')+'><div class="hh"><div class="hn" data-hedit="'+b.id+'"><b>'+esc(b.n||"Untitled")+'</b><span class="hs"><span class="'+(s.cur?"u":"")+'">'+(s.cur?s.cur+(s.cur==1?" day":" days")+" streak":"No streak")+'</span><span>Best '+s.best+'</span><span>'+s.total+' total</span></span></div>'
+     +'<button class="ck'+(b.d[tk]?" on":"")+'" data-htog="'+b.id+'" aria-label="Mark today"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>'
+     +'<div class="hm" style="grid-template-columns:auto repeat('+HN+',1fr)">'+cells+'</div></section>';
+  });
+  if(!HB.length)h='<div class="empty">No habits yet. Add one to start a streak.</div>';
+  h+='<button class="add" data-hadd="1">+ Add habit</button>';
+  document.getElementById("hlist").innerHTML=h;
+  document.getElementById("hcount").textContent=HB.length+(HB.length==1?" habit":" habits");
+}
+window.addEventListener("resize",function(){if(hweeks()!==HN)hrender()});
+function hfind(id){return HB.find(function(b){return b.id===id})}
+function hopen(id){
+  var b=hfind(id);if(!b)return;hcur=id;
+  document.getElementById("hpane").innerHTML='<input class="t" id="hname" placeholder="Habit name" maxlength="40" autocomplete="off" value="'+esc(b.n)+'"><div class="sw" style="margin-top:12px"><button class="none'+(b.c?'':' on')+'" data-hcol="" title="No colour"></button>'+PAL.map(function(c){return'<button data-hcol="'+c+'" style="--pc:'+c+'" class="'+(b.c===c?'on':'')+'"></button>'}).join("")+'</div><div class="foot"><button data-hdel="1">Delete</button><button class="ok" data-hclose="1">Done</button></div>';
+  HS.classList.add("on");
+}
+function hclose(){hcur=null;HS.classList.remove("on");HB=HB.filter(function(b){return b.n.trim()});hsave();hrender()}
+document.addEventListener("click",function(e){
+  var t=e.target,x,q=function(a){return t.closest&&t.closest("["+a+"]")};
+  if(t.dataset.hcol!==undefined){var hb=hfind(hcur);if(hb){hb.c=t.dataset.hcol;hsave();hopen(hcur);hrender()}return}
+  if(t.dataset.hadd){var nb={id:uid(),n:"",d:{}};HB.push(nb);hsave();hrender();hopen(nb.id);setTimeout(function(){var i=document.getElementById("hname");i&&i.focus()},50);return}
+  if(x=q("data-htog")){hflip(x.dataset.htog,dkey(new Date()));return}
+  if(t.dataset.hk){hflip(t.dataset.hk,t.dataset.d);return}
+  if(x=q("data-hedit")){hopen(x.dataset.hedit);return}
+  if(t===HS||t.dataset.hclose){hclose();return}
+  if(t.dataset.hdel){if(confirm("Delete this habit?")){HB=HB.filter(function(b){return b.id!==hcur});hclose()}}
+});
+function hflip(id,k){var b=hfind(id);if(!b)return;if(b.d[k])delete b.d[k];else b.d[k]=1;hsave();hrender()}
+document.addEventListener("input",function(e){if(e.target.id==="hname"){var b=hfind(hcur);if(b){b.n=e.target.value;hsave();hrender()}}});
+document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="hname")hclose()});
 route();
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 </script>

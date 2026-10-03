@@ -89,10 +89,10 @@ header span{color:var(--mute);font-size:13px}
 .prog{height:2px;background:var(--line);border-radius:2px;margin-top:10px}
 .prog i{display:block;height:100%;background:var(--accent);border-radius:2px}
 .add{margin:6px 10px 10px;padding:10px;border:1px dashed var(--line);border-radius:10px;background:none;color:var(--mute);font:inherit;cursor:pointer}
-#sheet,#set,#hs{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:5}
-#sheet.on,#set.on,#hs.on{display:flex}
+#sheet,#set,#hs,#as{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:5}
+#sheet.on,#set.on,#hs.on,#as.on{display:flex}
 .pane{background:var(--bg);width:100%;max-width:520px;max-height:88%;overflow-y:auto;border-radius:18px 18px 0 0;padding:18px 20px calc(20px + env(safe-area-inset-bottom,0px))}
-@media(min-width:760px){#sheet,#set,#hs{align-items:center}.pane{border-radius:18px}}
+@media(min-width:760px){#sheet,#set,#hs,#as{align-items:center}.pane{border-radius:18px}}
 input,button{font:inherit;color:var(--text)}
 .t{width:100%;border:0;background:none;font-size:20px;font-weight:600;padding:4px 0;outline:none}
 .seg{display:flex;background:var(--col);border-radius:10px;padding:3px;margin:12px 0}
@@ -125,6 +125,11 @@ input,button{font:inherit;color:var(--text)}
 .wr{display:flex;gap:8px}.wr .wb{margin-top:10px;font-size:15px}
 .wo{color:var(--mute);font-size:12px;margin:18px 0 6px}
 .wl{border:0;background:none;color:var(--mute);font-size:13px;margin-top:12px;cursor:pointer;padding:4px}
+.gr{width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:18px;line-height:1;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;margin-left:-4px}
+.n.drag{background:var(--col);border-radius:8px}
+.srt{border:0;background:none;color:var(--mute);font-size:12px;padding:10px 0 0;cursor:pointer}
+.hr{display:flex;gap:14px;align-items:baseline}
+.hr button{border:0;background:none;color:var(--mute);font-size:13px;cursor:pointer;padding:0}
 </style>
 </head>
 <body>
@@ -134,7 +139,7 @@ input,button{font:inherit;color:var(--text)}
 <nav class="tools" id="tools"></nav>
 </main>
 <main id="kanban" hidden>
-<header><div class="hl"><button id="back" aria-label="Home">&#8249;</button><h1>Kanban</h1></div><span id="count"></span></header>
+<header><div class="hl"><button id="back" aria-label="Home">&#8249;</button><h1>Kanban</h1></div><span class="hr"><button id="arcb" data-arc="1">Archive</button><span id="count"></span></span></header>
 <div id="board"></div>
 </main>
 <div id="set"><div class="pane"><h3 style="margin:0;font-size:20px">Settings</h3><div id="acct"></div><label class="lbl" for="nameIn">Your name</label><input class="t nameIn" id="nameIn" placeholder="Name" maxlength="30" autocomplete="off"><label class="lbl">Week starts on</label><div class="seg"><button data-ws="0">Sunday</button><button data-ws="1">Monday</button></div><div class="foot"><span></span><button class="ok" data-sclose="1">Done</button></div></div></div>
@@ -146,15 +151,14 @@ input,button{font:inherit;color:var(--text)}
 <div id="welcome" hidden><div class="wbox">
 <svg width="56" height="56" viewBox="0 0 180 180"><rect width="180" height="180" rx="36" fill="currentColor"/><g fill="var(--bg)"><rect x="32" y="40" width="30" height="100" rx="5"/><rect x="75" y="40" width="30" height="70" rx="5"/><rect x="118" y="40" width="30" height="45" rx="5"/></g></svg>
 <h2>Dashboard</h2><p>Sign in to sync your data across devices and keep it safe.</p>
-<div class="wbs"><button class="wb p" id="wg">Continue with Google</button>
-<div class="wo">or use email</div>
-<input class="wi" id="wem" type="email" placeholder="Email" autocomplete="email" autocapitalize="off">
+<div class="wbs"><input class="wi" id="wem" type="email" placeholder="Email" autocomplete="email" autocapitalize="off">
 <input class="wi" id="wpw" type="password" placeholder="Password" autocomplete="current-password">
-<div class="wr"><button class="wb" id="wsi">Sign in</button><button class="wb" id="wsu">Create account</button></div>
+<div class="wr"><button class="wb p" id="wsi">Sign in</button><button class="wb" id="wsu">Create account</button></div>
 <button class="wl" id="wfp">Forgot password?</button>
 <button class="wb" id="wguest" style="margin-top:22px">Continue as guest</button></div>
 <p class="wn">Guest data stays on this device only and is lost if you clear your browser data.</p><p class="wn" id="wmsg"></p>
 </div></div>
+<div id="as"><div class="pane" id="apane"></div></div>
 <div id="sheet"><div class="pane" id="pane"></div></div>
 <script>
 var COLS=[["todo","To do"],["doing","In progress"],["done","Done"]];
@@ -181,7 +185,7 @@ function byUrgency(a,b){
 function render(){
   var h="";
   COLS.forEach(function(c){
-    var items=S.map(function(p,i){return[p,i]}).filter(function(x){return x[0].s===c[0]}).sort(byUrgency).map(function(x){return x[0]});
+    var items=S.map(function(p,i){return[p,i]}).filter(function(x){return x[0].s===c[0]&&!x[0].a}).sort(byUrgency).map(function(x){return x[0]});
     h+='<section class="col"><div class="ch">'+c[1]+'<small>'+items.length+'</small></div><div class="list">';
     items.forEach(function(p){
       var done=p.n.filter(function(n){return n.d}).length,pct=p.n.length?done/p.n.length*100:0;
@@ -193,7 +197,7 @@ function render(){
     h+='</div><button class="add" data-add="'+c[0]+'">+ Add project</button></section>';
   });
   document.getElementById("board").innerHTML=h;
-  document.getElementById("count").textContent=S.length+(S.length==1?" project":" projects");
+  var na=S.filter(function(p){return p.a}).length,nv=S.length-na;document.getElementById("count").textContent=nv+(nv==1?" project":" projects");document.getElementById("arcb").textContent="Archive"+(na?" ("+na+")":"");
 }
 function sheet(){
   var p=S.find(function(x){return x.id===cur});
@@ -203,10 +207,11 @@ function sheet(){
   h+='<div class="dr"><span>Due</span><input type="date" id="due" value="'+esc(p.due||"")+'"><button data-nodue="1" id="nd" class="'+(p.due?'':'on')+'">No date</button></div>';
   h+='<div class="seg">'+COLS.map(function(c){return'<button data-s="'+c[0]+'" class="'+(p.s===c[0]?"on":"")+'">'+c[1]+'</button>'}).join("")+'</div>';
   p.n.forEach(function(n,i){
-    h+='<div class="n'+(n.d?" d":"")+'"><input type="checkbox" data-c="'+i+'"'+(n.d?" checked":"")+'><input type="text" data-e="'+i+'" value="'+esc(n.x)+'"><button class="x" data-r="'+i+'">×</button></div>';
+    h+='<div class="n'+(n.d?" d":"")+'" data-i="'+i+'"><span class="gr">&#8801;</span><input type="checkbox" data-c="'+i+'"'+(n.d?" checked":"")+'><input type="text" data-e="'+i+'" value="'+esc(n.x)+'"><button class="x" data-r="'+i+'">×</button></div>';
   });
   h+='<input class="newn" id="newn" placeholder="Add a pointer…  (press return)">';
-  h+='<div class="foot"><button data-del="1">Delete</button><button class="ok" data-close="1">Done</button></div>';
+  if(p.n.some(function(n){return n.d})&&p.n.some(function(n){return!n.d}))h+='<button class="srt" data-sortdone="1">Move done to bottom</button>';
+  h+='<div class="foot"><button data-del="1">Delete</button><button data-arch="1">Archive</button><button class="ok" data-close="1">Done</button></div>';
   document.getElementById("pane").innerHTML=h;
   document.getElementById("sheet").classList.add("on");
 }
@@ -219,6 +224,8 @@ document.addEventListener("click",function(e){
   if(t.id==="sheet"||t.dataset.close){close();return}
   if(!p)return;
   if(t.dataset.col!==undefined){p.c=t.dataset.col;save();sheet();render()}
+  else if(t.dataset.arch){p.a=true;save();close()}
+  else if(t.dataset.sortdone){p.n=p.n.filter(function(n){return!n.d}).concat(p.n.filter(function(n){return n.d}));save();sheet();render()}
   else if(t.dataset.nodue){p.due="";save();sheet();render()}
   else if(t.dataset.s){p.s=t.dataset.s;save();sheet();render()}
   else if(t.dataset.r!==undefined){p.n.splice(+t.dataset.r,1);save();sheet();render()}
@@ -339,14 +346,11 @@ function lset(k,v){try{localStorage.setItem(k,typeof v==="string"?v:JSON.stringi
 function lrm(k){try{localStorage.removeItem(k)}catch(e){}}
 function mode(){return lget(MK)||""}
 function setMsg(t){["wmsg","amsg"].forEach(function(i){var el=document.getElementById(i);if(el)el.textContent=t})}
-function showWelcome(){if(gcOK())gisLoad().catch(function(){});document.getElementById("welcome").hidden=false;if(!FB)fbLoad().catch(function(){})}
+function showWelcome(){document.getElementById("welcome").hidden=false;if(!FB)fbLoad().catch(function(){})}
 function acct(){
-  if(gcOK())gisLoad().catch(function(){});
   var h=mode()==="google"
-    ?'<div class="ar"><span>'+esc(lget(EK)||"Google account")+'<small>Synced to the cloud</small></span><button data-signout="1">Sign out</button></div>'
+    ?'<div class="ar"><span>'+esc(lget(EK)||"Account")+'<small>Synced to the cloud</small></span><button data-signout="1">Sign out</button></div>'
     :'<div class="ar"><span>Guest<small>Data stays on this device only</small></span><button data-signin="1">Sign in</button></div>';
-  var pv=CU?CU.providerData.map(function(p){return p.providerId}):[];
-  if(mode()==="google"&&pv.indexOf("password")>-1&&pv.indexOf("google.com")<0)h+='<div class="ar"><span>Google<small>Link it to sign in with Google too</small></span><button data-link="1">Link</button></div>';
   document.getElementById("acct").innerHTML='<span class="lbl">Account</span>'+h+'<p class="wn" id="amsg" style="margin:8px 0 0"></p>';
 }
 async function fbLoad(){
@@ -355,12 +359,6 @@ async function fbLoad(){
   var A=m[1],F=m[2],app=m[0].initializeApp(FBC),db;
   try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){db=F.getFirestore(app)}
   FB={A:A,F:F,db:db,auth:A.getAuth(app)};
-  A.getRedirectResult(FB.auth).then(function(r){if(r&&r.operationType==="link")linked()}).catch(function(e){
-    lrm("dash.redir");
-    if(/already-in-use/.test(e.code||""))linkErr(e);
-    else if(mode()==="google")alert(authErr(e));
-    else{showWelcome();setMsg("Sign-in failed ("+(e.code||"error")+")")}
-  });
   A.onAuthStateChanged(FB.auth,onUser);
   return FB;
 }
@@ -411,47 +409,9 @@ function onUser(u){
     ["kanban","habits","settings"].forEach(function(k){unsubs.push(syncDoc(u.uid,k,prev!==u.uid))});
   }else if(mode()==="google"){lset(MK,"");showWelcome()}
   acct();
-  if(lget("dash.redir")){lrm("dash.redir");if(!u){showWelcome();setMsg("Google finished, but the sign-in did not stick. This usually means the app is not hosted on the same domain as the Firebase auth domain.")}}
-}
-async function signIn(){
-  setMsg("");
-  try{
-    if(gcOK()){
-      if(!gisReady()){gisLoad().catch(function(){});setMsg("Loading Google sign-in. Tap again in a moment.");return}
-      var tp=gToken(),f0=await fbLoad();
-      await f0.A.signInWithCredential(f0.auth,f0.A.GoogleAuthProvider.credential(null,await tp));
-      return;
-    }
-    var f=await fbLoad(),A=f.A,p=new A.GoogleAuthProvider();
-    if(navigator.standalone||matchMedia("(display-mode: standalone)").matches){lset("dash.redir","1");await A.signInWithRedirect(f.auth,p);return}
-    try{await A.signInWithPopup(f.auth,p)}catch(e){
-      if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){lset("dash.redir","1");await A.signInWithRedirect(f.auth,p)}
-      else if(e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")throw e;
-    }
-  }catch(e){if(gcOK())gErr(e);else setMsg("Sign-in failed"+(e.code?" ("+e.code+")":"")+". Check your connection and try again.")}
-}
-
-
-// Paste your Web client ID (Firebase console > Authentication > Sign-in method > Google > Web SDK configuration)
-var GCID="460260939803-2jb3ohh16f2adikf0q4psmppjck485un.apps.googleusercontent.com";
-function gcOK(){return GCID.indexOf("PASTE")<0}
-function gisReady(){return !!(window.google&&google.accounts&&google.accounts.oauth2)}
-function gisLoad(){return new Promise(function(res,rej){
-  if(gisReady())return res();
-  var el=document.createElement("script");el.src="https://accounts.google.com/gsi/client";el.async=true;
-  el.onload=function(){res()};el.onerror=function(){rej(new Error("gis"))};document.head.appendChild(el);
-})}
-function gToken(){return new Promise(function(res,rej){
-  google.accounts.oauth2.initTokenClient({client_id:GCID,scope:"openid email profile",
-    callback:function(r){r.access_token?res(r.access_token):rej(new Error(r.error||"no_token"))},
-    error_callback:function(e){rej(new Error(e&&e.type||"popup_error"))}}).requestAccessToken();
-})}
-function gErr(e){
-  if(e.message==="popup_closed")return;
-  setMsg(e.message==="popup_failed_to_open"?"The sign-in window was blocked. Allow pop-ups and try again.":"Google sign-in failed ("+(e.code||e.message||"error")+").");
 }
 function authErr(e){
-  var m={"auth/invalid-email":"That email address looks invalid.","auth/email-already-in-use":"An account with this email already exists. Try signing in, or use Google.","auth/weak-password":"Password must be at least 6 characters.","auth/invalid-credential":"Wrong email or password.","auth/wrong-password":"Wrong email or password.","auth/user-not-found":"Wrong email or password.","auth/too-many-requests":"Too many attempts. Try again later.","auth/network-request-failed":"No connection. Check your internet."};
+  var m={"auth/invalid-email":"That email address looks invalid.","auth/email-already-in-use":"An account with this email already exists. Try signing in instead.","auth/weak-password":"Password must be at least 6 characters.","auth/invalid-credential":"Wrong email or password.","auth/wrong-password":"Wrong email or password.","auth/user-not-found":"Wrong email or password.","auth/too-many-requests":"Too many attempts. Try again later.","auth/network-request-failed":"No connection. Check your internet."};
   return m[e.code]||"Something went wrong ("+(e.code||"error")+")";
 }
 async function emailAuth(create){
@@ -469,32 +429,6 @@ async function resetPw(){
   if(!em){setMsg("Enter your email first, then tap Forgot password.");return}
   try{var f=await fbLoad();await f.A.sendPasswordResetEmail(f.auth,em);setMsg("If an account exists for that email, a reset link is on its way.")}catch(e){setMsg(authErr(e))}
 }
-function linked(){acct();alert("Google account linked. You can now sign in with Google or with your email and password. It is the same account, so all your data stays together.")}
-async function linkGoogle(){
-  try{
-    if(gcOK()){
-      if(!gisReady()){gisLoad().catch(function(){});alert("Loading Google sign-in. Tap Link again in a moment.");return}
-      var tp=gToken(),f1=await fbLoad(),cr=f1.A.GoogleAuthProvider.credential(null,await tp);
-      try{await f1.A.linkWithCredential(f1.auth.currentUser,cr);linked()}catch(e){await linkErr(e,cr)}
-      return;
-    }
-    var f=await fbLoad(),A=f.A,p=new A.GoogleAuthProvider();
-    if(!f.auth.currentUser)return;
-    if(navigator.standalone||matchMedia("(display-mode: standalone)").matches){lset("dash.redir","1");await A.linkWithRedirect(f.auth.currentUser,p);return}
-    await A.linkWithPopup(f.auth.currentUser,p);linked();
-  }catch(e){if(gcOK()&&/popup|no_token/.test(e.message||""))gErr(e);else linkErr(e)}
-}
-async function linkErr(e,pc){
-  if(e.code==="auth/popup-closed-by-user"||e.code==="auth/cancelled-popup-request")return;
-  if(e.code==="auth/credential-already-in-use"||e.code==="auth/email-already-in-use"){
-    var cred=pc||FB.A.GoogleAuthProvider.credentialFromError(e);
-    if(cred&&confirm("That Google account already has its own data. Merge your current data into it and switch to that account?")){
-      try{lrm(UK);await FB.A.signInWithCredential(FB.auth,cred);document.getElementById("set").classList.remove("on")}catch(x){alert(authErr(x))}
-    }else if(!cred)alert("That Google account is already in use. Sign out and sign in with Google instead.");
-    return;
-  }
-  alert(authErr(e));
-}
 document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="wpw")emailAuth(false)});
 async function doSignOut(){
   if(!confirm("Sign out? Your data stays in your account and is removed from this device."))return;
@@ -504,14 +438,59 @@ async function doSignOut(){
 }
 document.addEventListener("click",function(e){
   var t=e.target;
-  if(t.id==="wg"){signIn();return}
   if(t.dataset.signin){document.getElementById("set").classList.remove("on");showWelcome();return}
   if(t.id==="wsi"){emailAuth(false);return}
   if(t.id==="wsu"){emailAuth(true);return}
   if(t.id==="wfp"){resetPw();return}
-  if(t.dataset.link){linkGoogle();return}
+
   if(t.id==="wguest"){lset(MK,"guest");document.getElementById("welcome").hidden=true;acct();return}
   if(t.dataset.signout)doSignOut();
+});
+
+// Drag to reorder pointers
+var dr=null;
+document.addEventListener("pointerdown",function(e){
+  var g=e.target.closest&&e.target.closest(".gr");if(!g)return;
+  var row=g.closest(".n");if(!row)return;
+  dr={row:row};row.classList.add("drag");
+  try{g.setPointerCapture(e.pointerId)}catch(x){}
+  e.preventDefault();
+});
+document.addEventListener("pointermove",function(e){
+  if(!dr)return;
+  var rows=[].slice.call(dr.row.parentNode.querySelectorAll(".n")),y=e.clientY;
+  for(var k=0;k<rows.length;k++){
+    var r=rows[k];if(r===dr.row)continue;
+    var b=r.getBoundingClientRect();
+    if(y>b.top&&y<b.bottom){r.parentNode.insertBefore(dr.row,y<b.top+b.height/2?r:r.nextSibling);break}
+  }
+});
+function endDrag(){
+  if(!dr)return;
+  var p=S.find(function(x){return x.id===cur}),o=[].map.call(dr.row.parentNode.querySelectorAll(".n"),function(r){return+r.dataset.i});
+  dr=null;
+  if(p){p.n=o.map(function(i){return p.n[i]});save()}
+  sheet();render();
+}
+document.addEventListener("pointerup",endDrag);
+document.addEventListener("pointercancel",endDrag);
+// Archive
+var AS=document.getElementById("as");
+function aopen(){
+  var L=S.filter(function(p){return p.a}),h='<h3 style="margin:0 0 6px;font-size:20px">Archive</h3>';
+  h+=L.length?L.map(function(p){
+    var c=COLS.filter(function(x){return x[0]===p.s})[0];
+    return'<div class="ar"><span>'+esc(p.t||"Untitled")+'<small>'+(c?c[1]:"")+'</small></span><span style="display:flex;gap:6px"><button data-arest="'+p.id+'">Restore</button><button data-adel="'+p.id+'">Delete</button></span></div>';
+  }).join(""):'<p class="empty" style="padding:24px 0">No archived projects.</p>';
+  h+='<div class="foot"><span></span><button class="ok" data-aclose="1">Done</button></div>';
+  document.getElementById("apane").innerHTML=h;AS.classList.add("on");
+}
+document.addEventListener("click",function(e){
+  var t=e.target,p;
+  if(t.dataset.arc){aopen();return}
+  if(t===AS||t.dataset.aclose){AS.classList.remove("on");return}
+  if(t.dataset.arest){p=S.find(function(x){return x.id===t.dataset.arest});if(p){p.a=false;save();render();aopen()}return}
+  if(t.dataset.adel){p=S.find(function(x){return x.id===t.dataset.adel});if(p&&confirm("Delete this project permanently?")){S=S.filter(function(x){return x!==p});save();render();aopen()}}
 });
 route();
 if(!mode())showWelcome();else if(mode()==="google")fbLoad().catch(function(){});

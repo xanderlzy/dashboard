@@ -332,15 +332,16 @@ document.addEventListener("input",function(e){if(e.target.id==="hname"){var b=hf
 document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="hname")hclose()});
 
 // ---- Accounts and cloud sync (Firebase Auth + Firestore). Guests stay local-only.
-var FBC={apiKey:"AIzaSyDya_QINgfhCv_8U9udZytWFrfBuz1xkTo",authDomain:/(web\.app|firebaseapp\.com)$/.test(location.hostname)?location.hostname:"xanderlzy-project.firebaseapp.com",projectId:"xanderlzy-project",storageBucket:"xanderlzy-project.firebasestorage.app",messagingSenderId:"460260939803",appId:"1:460260939803:web:0bc26b2aa05653a8b100be"};
+var FBC={apiKey:"AIzaSyDya_QINgfhCv_8U9udZytWFrfBuz1xkTo",authDomain:/web\.app$|firebaseapp\.com$/.test(location.hostname)?location.hostname:"xanderlzy-project.firebaseapp.com",projectId:"xanderlzy-project",storageBucket:"xanderlzy-project.firebasestorage.app",messagingSenderId:"460260939803",appId:"1:460260939803:web:0bc26b2aa05653a8b100be"};
 var FB=null,CU=null,unsubs=[],ptm={},seq={},MK="dash.mode",UK="dash.uid",EK="dash.email",DK="dash.d.";
 function lget(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lset(k,v){try{localStorage.setItem(k,typeof v==="string"?v:JSON.stringify(v))}catch(e){}}
 function lrm(k){try{localStorage.removeItem(k)}catch(e){}}
 function mode(){return lget(MK)||""}
 function setMsg(t){["wmsg","amsg"].forEach(function(i){var el=document.getElementById(i);if(el)el.textContent=t})}
-function showWelcome(){document.getElementById("welcome").hidden=false;if(!FB)fbLoad().catch(function(){})}
+function showWelcome(){if(gcOK())gisLoad().catch(function(){});document.getElementById("welcome").hidden=false;if(!FB)fbLoad().catch(function(){})}
 function acct(){
+  if(gcOK())gisLoad().catch(function(){});
   var h=mode()==="google"
     ?'<div class="ar"><span>'+esc(lget(EK)||"Google account")+'<small>Synced to the cloud</small></span><button data-signout="1">Sign out</button></div>'
     :'<div class="ar"><span>Guest<small>Data stays on this device only</small></span><button data-signin="1">Sign in</button></div>';
@@ -415,15 +416,40 @@ function onUser(u){
 async function signIn(){
   setMsg("");
   try{
+    if(gcOK()){
+      if(!gisReady()){gisLoad().catch(function(){});setMsg("Loading Google sign-in. Tap again in a moment.");return}
+      var tp=gToken(),f0=await fbLoad();
+      await f0.A.signInWithCredential(f0.auth,f0.A.GoogleAuthProvider.credential(null,await tp));
+      return;
+    }
     var f=await fbLoad(),A=f.A,p=new A.GoogleAuthProvider();
     if(navigator.standalone||matchMedia("(display-mode: standalone)").matches){lset("dash.redir","1");await A.signInWithRedirect(f.auth,p);return}
     try{await A.signInWithPopup(f.auth,p)}catch(e){
       if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){lset("dash.redir","1");await A.signInWithRedirect(f.auth,p)}
       else if(e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")throw e;
     }
-  }catch(e){setMsg("Sign-in failed"+(e.code?" ("+e.code+")":"")+". Check your connection and try again.")}
+  }catch(e){if(gcOK())gErr(e);else setMsg("Sign-in failed"+(e.code?" ("+e.code+")":"")+". Check your connection and try again.")}
 }
 
+
+// Paste your Web client ID (Firebase console > Authentication > Sign-in method > Google > Web SDK configuration)
+var GCID="460260939803-2jb3ohh16f2adikf0q4psmppjck485un.apps.googleusercontent.com";
+function gcOK(){return GCID.indexOf("PASTE")<0}
+function gisReady(){return !!(window.google&&google.accounts&&google.accounts.oauth2)}
+function gisLoad(){return new Promise(function(res,rej){
+  if(gisReady())return res();
+  var el=document.createElement("script");el.src="https://accounts.google.com/gsi/client";el.async=true;
+  el.onload=function(){res()};el.onerror=function(){rej(new Error("gis"))};document.head.appendChild(el);
+})}
+function gToken(){return new Promise(function(res,rej){
+  google.accounts.oauth2.initTokenClient({client_id:GCID,scope:"openid email profile",
+    callback:function(r){r.access_token?res(r.access_token):rej(new Error(r.error||"no_token"))},
+    error_callback:function(e){rej(new Error(e&&e.type||"popup_error"))}}).requestAccessToken();
+})}
+function gErr(e){
+  if(e.message==="popup_closed")return;
+  setMsg(e.message==="popup_failed_to_open"?"The sign-in window was blocked. Allow pop-ups and try again.":"Google sign-in failed ("+(e.code||e.message||"error")+").");
+}
 function authErr(e){
   var m={"auth/invalid-email":"That email address looks invalid.","auth/email-already-in-use":"An account with this email already exists. Try signing in, or use Google.","auth/weak-password":"Password must be at least 6 characters.","auth/invalid-credential":"Wrong email or password.","auth/wrong-password":"Wrong email or password.","auth/user-not-found":"Wrong email or password.","auth/too-many-requests":"Too many attempts. Try again later.","auth/network-request-failed":"No connection. Check your internet."};
   return m[e.code]||"Something went wrong ("+(e.code||"error")+")";
@@ -446,16 +472,22 @@ async function resetPw(){
 function linked(){acct();alert("Google account linked. You can now sign in with Google or with your email and password. It is the same account, so all your data stays together.")}
 async function linkGoogle(){
   try{
+    if(gcOK()){
+      if(!gisReady()){gisLoad().catch(function(){});alert("Loading Google sign-in. Tap Link again in a moment.");return}
+      var tp=gToken(),f1=await fbLoad(),cr=f1.A.GoogleAuthProvider.credential(null,await tp);
+      try{await f1.A.linkWithCredential(f1.auth.currentUser,cr);linked()}catch(e){await linkErr(e,cr)}
+      return;
+    }
     var f=await fbLoad(),A=f.A,p=new A.GoogleAuthProvider();
     if(!f.auth.currentUser)return;
     if(navigator.standalone||matchMedia("(display-mode: standalone)").matches){lset("dash.redir","1");await A.linkWithRedirect(f.auth.currentUser,p);return}
     await A.linkWithPopup(f.auth.currentUser,p);linked();
-  }catch(e){linkErr(e)}
+  }catch(e){if(gcOK()&&/popup|no_token/.test(e.message||""))gErr(e);else linkErr(e)}
 }
-async function linkErr(e){
+async function linkErr(e,pc){
   if(e.code==="auth/popup-closed-by-user"||e.code==="auth/cancelled-popup-request")return;
   if(e.code==="auth/credential-already-in-use"||e.code==="auth/email-already-in-use"){
-    var cred=FB.A.GoogleAuthProvider.credentialFromError(e);
+    var cred=pc||FB.A.GoogleAuthProvider.credentialFromError(e);
     if(cred&&confirm("That Google account already has its own data. Merge your current data into it and switch to that account?")){
       try{lrm(UK);await FB.A.signInWithCredential(FB.auth,cred);document.getElementById("set").classList.remove("on")}catch(x){alert(authErr(x))}
     }else if(!cred)alert("That Google account is already in use. Sign out and sign in with Google instead.");

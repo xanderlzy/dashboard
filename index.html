@@ -119,6 +119,12 @@ input,button{font:inherit;color:var(--text)}
 .ar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .ar small{display:block;color:var(--mute);font-size:12px}
 .ar button{border:0;background:var(--col);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;flex:none}
+#welcome{overflow-y:auto;align-items:flex-start;justify-content:flex-start}
+.wbox{margin:auto}
+.wi{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card);margin-top:10px;font-size:16px;outline:none}
+.wr{display:flex;gap:8px}.wr .wb{margin-top:10px;font-size:15px}
+.wo{color:var(--mute);font-size:12px;margin:18px 0 6px}
+.wl{border:0;background:none;color:var(--mute);font-size:13px;margin-top:12px;cursor:pointer;padding:4px}
 </style>
 </head>
 <body>
@@ -140,7 +146,13 @@ input,button{font:inherit;color:var(--text)}
 <div id="welcome" hidden><div class="wbox">
 <svg width="56" height="56" viewBox="0 0 180 180"><rect width="180" height="180" rx="36" fill="currentColor"/><g fill="var(--bg)"><rect x="32" y="40" width="30" height="100" rx="5"/><rect x="75" y="40" width="30" height="70" rx="5"/><rect x="118" y="40" width="30" height="45" rx="5"/></g></svg>
 <h2>Dashboard</h2><p>Sign in to sync your data across devices and keep it safe.</p>
-<div class="wbs"><button class="wb p" id="wg">Continue with Google</button><button class="wb" id="wguest">Continue as guest</button></div>
+<div class="wbs"><button class="wb p" id="wg">Continue with Google</button>
+<div class="wo">or use email</div>
+<input class="wi" id="wem" type="email" placeholder="Email" autocomplete="email" autocapitalize="off">
+<input class="wi" id="wpw" type="password" placeholder="Password" autocomplete="current-password">
+<div class="wr"><button class="wb" id="wsi">Sign in</button><button class="wb" id="wsu">Create account</button></div>
+<button class="wl" id="wfp">Forgot password?</button>
+<button class="wb" id="wguest" style="margin-top:22px">Continue as guest</button></div>
 <p class="wn">Guest data stays on this device only and is lost if you clear your browser data.</p><p class="wn" id="wmsg"></p>
 </div></div>
 <div id="sheet"><div class="pane" id="pane"></div></div>
@@ -332,6 +344,8 @@ function acct(){
   var h=mode()==="google"
     ?'<div class="ar"><span>'+esc(lget(EK)||"Google account")+'<small>Synced to the cloud</small></span><button data-signout="1">Sign out</button></div>'
     :'<div class="ar"><span>Guest<small>Data stays on this device only</small></span><button data-signin="1">Sign in</button></div>';
+  var pv=CU?CU.providerData.map(function(p){return p.providerId}):[];
+  if(mode()==="google"&&pv.indexOf("password")>-1&&pv.indexOf("google.com")<0)h+='<div class="ar"><span>Google<small>Link it to sign in with Google too</small></span><button data-link="1">Link</button></div>';
   document.getElementById("acct").innerHTML='<span class="lbl">Account</span>'+h+'<p class="wn" id="amsg" style="margin:8px 0 0"></p>';
 }
 async function fbLoad(){
@@ -340,7 +354,12 @@ async function fbLoad(){
   var A=m[1],F=m[2],app=m[0].initializeApp(FBC),db;
   try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){db=F.getFirestore(app)}
   FB={A:A,F:F,db:db,auth:A.getAuth(app)};
-  A.getRedirectResult(FB.auth).catch(function(e){lrm("dash.redir");showWelcome();setMsg("Sign-in failed ("+(e.code||"error")+")")});
+  A.getRedirectResult(FB.auth).then(function(r){if(r&&r.operationType==="link")linked()}).catch(function(e){
+    lrm("dash.redir");
+    if(/already-in-use/.test(e.code||""))linkErr(e);
+    else if(mode()==="google")alert(authErr(e));
+    else{showWelcome();setMsg("Sign-in failed ("+(e.code||"error")+")")}
+  });
   A.onAuthStateChanged(FB.auth,onUser);
   return FB;
 }
@@ -404,6 +423,47 @@ async function signIn(){
     }
   }catch(e){setMsg("Sign-in failed"+(e.code?" ("+e.code+")":"")+". Check your connection and try again.")}
 }
+
+function authErr(e){
+  var m={"auth/invalid-email":"That email address looks invalid.","auth/email-already-in-use":"An account with this email already exists. Try signing in, or use Google.","auth/weak-password":"Password must be at least 6 characters.","auth/invalid-credential":"Wrong email or password.","auth/wrong-password":"Wrong email or password.","auth/user-not-found":"Wrong email or password.","auth/too-many-requests":"Too many attempts. Try again later.","auth/network-request-failed":"No connection. Check your internet."};
+  return m[e.code]||"Something went wrong ("+(e.code||"error")+")";
+}
+async function emailAuth(create){
+  setMsg("");
+  var em=document.getElementById("wem").value.trim(),pw=document.getElementById("wpw").value;
+  if(!em||!pw){setMsg("Enter your email and password.");return}
+  try{
+    var f=await fbLoad();
+    if(create)await f.A.createUserWithEmailAndPassword(f.auth,em,pw);
+    else await f.A.signInWithEmailAndPassword(f.auth,em,pw);
+  }catch(e){setMsg(authErr(e))}
+}
+async function resetPw(){
+  var em=document.getElementById("wem").value.trim();
+  if(!em){setMsg("Enter your email first, then tap Forgot password.");return}
+  try{var f=await fbLoad();await f.A.sendPasswordResetEmail(f.auth,em);setMsg("If an account exists for that email, a reset link is on its way.")}catch(e){setMsg(authErr(e))}
+}
+function linked(){acct();alert("Google account linked. You can now sign in with Google or with your email and password. It is the same account, so all your data stays together.")}
+async function linkGoogle(){
+  try{
+    var f=await fbLoad(),A=f.A,p=new A.GoogleAuthProvider();
+    if(!f.auth.currentUser)return;
+    if(navigator.standalone||matchMedia("(display-mode: standalone)").matches){lset("dash.redir","1");await A.linkWithRedirect(f.auth.currentUser,p);return}
+    await A.linkWithPopup(f.auth.currentUser,p);linked();
+  }catch(e){linkErr(e)}
+}
+async function linkErr(e){
+  if(e.code==="auth/popup-closed-by-user"||e.code==="auth/cancelled-popup-request")return;
+  if(e.code==="auth/credential-already-in-use"||e.code==="auth/email-already-in-use"){
+    var cred=FB.A.GoogleAuthProvider.credentialFromError(e);
+    if(cred&&confirm("That Google account already has its own data. Merge your current data into it and switch to that account?")){
+      try{lrm(UK);await FB.A.signInWithCredential(FB.auth,cred);document.getElementById("set").classList.remove("on")}catch(x){alert(authErr(x))}
+    }else if(!cred)alert("That Google account is already in use. Sign out and sign in with Google instead.");
+    return;
+  }
+  alert(authErr(e));
+}
+document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="wpw")emailAuth(false)});
 async function doSignOut(){
   if(!confirm("Sign out? Your data stays in your account and is removed from this device."))return;
   var f=FB;wipeLocal();lset(MK,"");
@@ -412,7 +472,12 @@ async function doSignOut(){
 }
 document.addEventListener("click",function(e){
   var t=e.target;
-  if(t.id==="wg"||t.dataset.signin){signIn();return}
+  if(t.id==="wg"){signIn();return}
+  if(t.dataset.signin){document.getElementById("set").classList.remove("on");showWelcome();return}
+  if(t.id==="wsi"){emailAuth(false);return}
+  if(t.id==="wsu"){emailAuth(true);return}
+  if(t.id==="wfp"){resetPw();return}
+  if(t.dataset.link){linkGoogle();return}
   if(t.id==="wguest"){lset(MK,"guest");document.getElementById("welcome").hidden=true;acct();return}
   if(t.dataset.signout)doSignOut();
 });

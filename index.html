@@ -108,6 +108,17 @@ input,button{font:inherit;color:var(--text)}
 .foot{display:flex;justify-content:space-between;margin-top:18px}
 .foot button{border:0;background:none;color:var(--mute);cursor:pointer;padding:6px 0}
 .foot .ok{color:var(--text);font-weight:600}
+#welcome{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+.wbox{width:100%;max-width:340px;text-align:center}
+.wbox h2{font-size:30px;font-weight:600;letter-spacing:-.03em;margin:18px 0 8px}
+.wbox p{color:var(--mute);margin:0}
+.wb{width:100%;padding:15px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:16px;margin-top:10px;cursor:pointer}
+.wb.p{background:var(--accent);color:var(--on);border-color:var(--accent)}
+.wbox .wbs{margin-top:28px}
+.wn{color:var(--mute);font-size:12px;margin:16px 0 0}
+.ar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ar small{display:block;color:var(--mute);font-size:12px}
+.ar button{border:0;background:var(--col);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;flex:none}
 </style>
 </head>
 <body>
@@ -120,19 +131,25 @@ input,button{font:inherit;color:var(--text)}
 <header><div class="hl"><button id="back" aria-label="Home">&#8249;</button><h1>Kanban</h1></div><span id="count"></span></header>
 <div id="board"></div>
 </main>
-<div id="set"><div class="pane"><h3 style="margin:0;font-size:20px">Settings</h3><label class="lbl" for="nameIn">Your name</label><input class="t nameIn" id="nameIn" placeholder="Name" maxlength="30" autocomplete="off"><label class="lbl">Week starts on</label><div class="seg"><button data-ws="0">Sunday</button><button data-ws="1">Monday</button></div><div class="foot"><span></span><button class="ok" data-sclose="1">Done</button></div></div></div>
+<div id="set"><div class="pane"><h3 style="margin:0;font-size:20px">Settings</h3><div id="acct"></div><label class="lbl" for="nameIn">Your name</label><input class="t nameIn" id="nameIn" placeholder="Name" maxlength="30" autocomplete="off"><label class="lbl">Week starts on</label><div class="seg"><button data-ws="0">Sunday</button><button data-ws="1">Monday</button></div><div class="foot"><span></span><button class="ok" data-sclose="1">Done</button></div></div></div>
 <main id="habits" hidden>
 <header><div class="hl"><button id="hback" aria-label="Home">&#8249;</button><h1>Habits</h1></div><span id="hcount"></span></header>
 <div id="hlist"></div>
 </main>
 <div id="hs"><div class="pane" id="hpane"></div></div>
+<div id="welcome" hidden><div class="wbox">
+<svg width="56" height="56" viewBox="0 0 180 180"><rect width="180" height="180" rx="36" fill="currentColor"/><g fill="var(--bg)"><rect x="32" y="40" width="30" height="100" rx="5"/><rect x="75" y="40" width="30" height="70" rx="5"/><rect x="118" y="40" width="30" height="45" rx="5"/></g></svg>
+<h2>Dashboard</h2><p>Sign in to sync your data across devices and keep it safe.</p>
+<div class="wbs"><button class="wb p" id="wg">Continue with Google</button><button class="wb" id="wguest">Continue as guest</button></div>
+<p class="wn">Guest data stays on this device only and is lost if you clear your browser data.</p><p class="wn" id="wmsg"></p>
+</div></div>
 <div id="sheet"><div class="pane" id="pane"></div></div>
 <script>
 var COLS=[["todo","To do"],["doing","In progress"],["done","Done"]];
 var KEY="kanban.v1",S=[],cur=null;
 try{S=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){S=[]}
 var PAL=["#e5484d","#f5a524","#46a758","#3e8fe0","#8e6fe0","#e05fa0"];
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}push("kanban")}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function dueDate(v){var a=v.split("-");return new Date(+a[0],a[1]-1,+a[2])}
@@ -235,11 +252,11 @@ document.addEventListener("click",function(e){
 var SET=document.getElementById("set"),NI=document.getElementById("nameIn");
 document.addEventListener("click",function(e){
   var t=e.target;
-  if(t.closest&&t.closest("#gear")){NI.value=NAME;wsSeg();SET.classList.add("on");return}
-  if(t.dataset.ws!==undefined){WS=+t.dataset.ws;try{localStorage.setItem(WK,WS)}catch(e){}wsSeg();hrender();return}
+  if(t.closest&&t.closest("#gear")){NI.value=NAME;wsSeg();acct();SET.classList.add("on");return}
+  if(t.dataset.ws!==undefined){WS=+t.dataset.ws;try{localStorage.setItem(WK,WS)}catch(e){}push("settings");wsSeg();hrender();return}
   if(t===SET||t.dataset.sclose){SET.classList.remove("on")}
 });
-NI.addEventListener("input",function(){NAME=NI.value;try{localStorage.setItem(NK,NAME)}catch(e){}home()});
+NI.addEventListener("input",function(){NAME=NI.value;try{localStorage.setItem(NK,NAME)}catch(e){}push("settings");home()});
 NI.addEventListener("keydown",function(e){if(e.key==="Enter")SET.classList.remove("on")});
 
 // Week start (0 = Sunday, 1 = Monday): use dowIndex() and dayLabels() in any calendar
@@ -250,7 +267,7 @@ function dayLabels(){var a=["S","M","T","W","T","F","S"];return a.slice(WS).conc
 function wsSeg(){[].forEach.call(document.querySelectorAll("[data-ws]"),function(b){b.classList.toggle("on",+b.dataset.ws===WS)})}
 var HKEY="habits.v1",HB=[],hcur=null,HN=12,HS=document.getElementById("hs");
 try{HB=JSON.parse(localStorage.getItem(HKEY)||"[]")}catch(e){HB=[]}
-function hsave(){try{localStorage.setItem(HKEY,JSON.stringify(HB))}catch(e){}}
+function hsave(){try{localStorage.setItem(HKEY,JSON.stringify(HB))}catch(e){}push("habits")}
 function dkey(d){var m=d.getMonth()+1,a=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(a<10?"0":"")+a}
 function streaks(b){
   var t=new Date(),c=new Date(t.getFullYear(),t.getMonth(),t.getDate()),cur=0;
@@ -301,7 +318,104 @@ document.addEventListener("click",function(e){
 function hflip(id,k){var b=hfind(id);if(!b)return;if(b.d[k])delete b.d[k];else b.d[k]=1;hsave();hrender()}
 document.addEventListener("input",function(e){if(e.target.id==="hname"){var b=hfind(hcur);if(b){b.n=e.target.value;hsave();hrender()}}});
 document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="hname")hclose()});
+
+// ---- Accounts and cloud sync (Firebase Auth + Firestore). Guests stay local-only.
+var FBC={apiKey:"AIzaSyDya_QINgfhCv_8U9udZytWFrfBuz1xkTo",authDomain:/(web\.app|firebaseapp\.com)$/.test(location.hostname)?location.hostname:"xanderlzy-project.firebaseapp.com",projectId:"xanderlzy-project",storageBucket:"xanderlzy-project.firebasestorage.app",messagingSenderId:"460260939803",appId:"1:460260939803:web:0bc26b2aa05653a8b100be"};
+var FB=null,CU=null,unsubs=[],ptm={},seq={},MK="dash.mode",UK="dash.uid",EK="dash.email",DK="dash.d.";
+function lget(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lset(k,v){try{localStorage.setItem(k,typeof v==="string"?v:JSON.stringify(v))}catch(e){}}
+function lrm(k){try{localStorage.removeItem(k)}catch(e){}}
+function mode(){return lget(MK)||""}
+function setMsg(t){["wmsg","amsg"].forEach(function(i){var el=document.getElementById(i);if(el)el.textContent=t})}
+function showWelcome(){document.getElementById("welcome").hidden=false;if(!FB)fbLoad().catch(function(){})}
+function acct(){
+  var h=mode()==="google"
+    ?'<div class="ar"><span>'+esc(lget(EK)||"Google account")+'<small>Synced to the cloud</small></span><button data-signout="1">Sign out</button></div>'
+    :'<div class="ar"><span>Guest<small>Data stays on this device only</small></span><button data-signin="1">Sign in</button></div>';
+  document.getElementById("acct").innerHTML='<span class="lbl">Account</span>'+h+'<p class="wn" id="amsg" style="margin:8px 0 0"></p>';
+}
+async function fbLoad(){
+  if(FB)return FB;
+  var b="https://www.gstatic.com/firebasejs/10.14.1/",m=await Promise.all([import(b+"firebase-app.js"),import(b+"firebase-auth.js"),import(b+"firebase-firestore.js")]);
+  var A=m[1],F=m[2],app=m[0].initializeApp(FBC),db;
+  try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){db=F.getFirestore(app)}
+  FB={A:A,F:F,db:db,auth:A.getAuth(app)};
+  A.onAuthStateChanged(FB.auth,onUser);
+  return FB;
+}
+function push(kind){
+  if(mode()!=="google")return;
+  lset(DK+kind,"1");
+  if(!FB||!CU)return;
+  var n=seq[kind]=(seq[kind]||0)+1,uid=CU.uid;
+  clearTimeout(ptm[kind]);
+  ptm[kind]=setTimeout(function(){
+    var d=JSON.parse(JSON.stringify(kind==="kanban"?{projects:S}:kind==="habits"?{habits:HB}:{name:NAME,ws:WS}));
+    d.ts=Date.now();
+    FB.F.setDoc(FB.F.doc(FB.db,"users",uid,"data",kind),d).then(function(){if(seq[kind]===n)lrm(DK+kind)}).catch(function(){});
+  },300);
+}
+function syncDoc(uid,kind,doMerge){
+  var first=true,f=FB.F;
+  return f.onSnapshot(f.doc(FB.db,"users",uid,"data",kind),function(snap){
+    if(snap.metadata.hasPendingWrites)return;
+    if(lget(DK+kind)){first=false;push(kind);return}
+    var d=snap.exists()?snap.data():null,mg=doMerge&&first;first=false;
+    if(kind==="settings"){
+      if(!d){if(NAME||WS)push(kind);return}
+      var nn=mg&&NAME&&!d.name?NAME:(d.name||""),nw=d.ws===1?1:0;
+      if(nn!==NAME||nw!==WS){NAME=nn;WS=nw;lset(NK,NAME);lset(WK,String(WS));home();hrender();wsSeg()}
+      if(nn!==(d.name||""))push(kind);
+      return;
+    }
+    var isK=kind==="kanban",loc=isK?S:HB,cl=d&&d[isK?"projects":"habits"];
+    if(!cl){if(loc.length)push(kind);return}
+    var n=mg?cl.concat(loc.filter(function(l){return!cl.some(function(c){return c.id===l.id})})):cl;
+    if(JSON.stringify(n)!==JSON.stringify(loc)){if(isK){S=n;lset(KEY,S);render()}else{HB=n;lset(HKEY,HB);hrender()}}
+    if(mg&&n.length!==cl.length)push(kind);
+  },function(){});
+}
+function wipeLocal(){
+  S=[];HB=[];NAME="";WS=0;
+  [KEY,HKEY,NK,WK,UK,EK,DK+"kanban",DK+"habits",DK+"settings"].forEach(lrm);
+  render();hrender();home();wsSeg();
+}
+function onUser(u){
+  CU=u;unsubs.forEach(function(f){f()});unsubs=[];
+  if(u){
+    var prev=lget(UK);
+    if(prev&&prev!==u.uid)wipeLocal();
+    lset(UK,u.uid);lset(EK,u.email||"");lset(MK,"google");
+    document.getElementById("welcome").hidden=true;
+    ["kanban","habits","settings"].forEach(function(k){unsubs.push(syncDoc(u.uid,k,prev!==u.uid))});
+  }else if(mode()==="google"){lset(MK,"");showWelcome()}
+  acct();
+}
+async function signIn(){
+  setMsg("");
+  try{
+    var f=await fbLoad(),A=f.A,p=new A.GoogleAuthProvider();
+    if(navigator.standalone||matchMedia("(display-mode: standalone)").matches){await A.signInWithRedirect(f.auth,p);return}
+    try{await A.signInWithPopup(f.auth,p)}catch(e){
+      if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")await A.signInWithRedirect(f.auth,p);
+      else if(e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")throw e;
+    }
+  }catch(e){setMsg("Sign-in failed"+(e.code?" ("+e.code+")":"")+". Check your connection and try again.")}
+}
+async function doSignOut(){
+  if(!confirm("Sign out? Your data stays in your account and is removed from this device."))return;
+  var f=FB;wipeLocal();lset(MK,"");
+  try{if(f)await f.A.signOut(f.auth)}catch(e){}
+  document.getElementById("set").classList.remove("on");location.hash="";acct();showWelcome();
+}
+document.addEventListener("click",function(e){
+  var t=e.target;
+  if(t.id==="wg"||t.dataset.signin){signIn();return}
+  if(t.id==="wguest"){lset(MK,"guest");document.getElementById("welcome").hidden=true;acct();return}
+  if(t.dataset.signout)doSignOut();
+});
 route();
+if(!mode())showWelcome();else if(mode()==="google")fbLoad().catch(function(){});
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 </script>
 </body>

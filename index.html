@@ -340,6 +340,7 @@ async function fbLoad(){
   var A=m[1],F=m[2],app=m[0].initializeApp(FBC),db;
   try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){db=F.getFirestore(app)}
   FB={A:A,F:F,db:db,auth:A.getAuth(app)};
+  A.getRedirectResult(FB.auth).catch(function(e){lrm("dash.redir");showWelcome();setMsg("Sign-in failed ("+(e.code||"error")+")")});
   A.onAuthStateChanged(FB.auth,onUser);
   return FB;
 }
@@ -390,14 +391,15 @@ function onUser(u){
     ["kanban","habits","settings"].forEach(function(k){unsubs.push(syncDoc(u.uid,k,prev!==u.uid))});
   }else if(mode()==="google"){lset(MK,"");showWelcome()}
   acct();
+  if(lget("dash.redir")){lrm("dash.redir");if(!u){showWelcome();setMsg("Google finished, but the sign-in did not stick. This usually means the app is not hosted on the same domain as the Firebase auth domain.")}}
 }
 async function signIn(){
   setMsg("");
   try{
     var f=await fbLoad(),A=f.A,p=new A.GoogleAuthProvider();
-    if(navigator.standalone||matchMedia("(display-mode: standalone)").matches){await A.signInWithRedirect(f.auth,p);return}
+    if(navigator.standalone||matchMedia("(display-mode: standalone)").matches){lset("dash.redir","1");await A.signInWithRedirect(f.auth,p);return}
     try{await A.signInWithPopup(f.auth,p)}catch(e){
-      if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")await A.signInWithRedirect(f.auth,p);
+      if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){lset("dash.redir","1");await A.signInWithRedirect(f.auth,p)}
       else if(e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")throw e;
     }
   }catch(e){setMsg("Sign-in failed"+(e.code?" ("+e.code+")":"")+". Check your connection and try again.")}
